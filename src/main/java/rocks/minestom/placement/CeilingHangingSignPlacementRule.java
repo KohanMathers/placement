@@ -4,6 +4,7 @@ import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.instance.block.rule.BlockPlacementRule;
+import rocks.minestom.placement.utils.Utility;
 import net.minestom.server.utils.Direction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,7 +22,7 @@ public final class CeilingHangingSignPlacementRule extends BlockPlacementRule {
     }
 
     @Override
-    public @Nullable Block blockPlace(@NotNull PlacementState placementState) {
+    public Block blockPlace(@NotNull PlacementState placementState) {
         var playerPosition = placementState.playerPosition();
         var placePosition = placementState.placePosition();
         var instance = placementState.instance();
@@ -116,14 +117,21 @@ public final class CeilingHangingSignPlacementRule extends BlockPlacementRule {
     }
 
     private static @Nullable Direction getDirectionFromRotation(int rotation) {
-        if (rotation == 0 || rotation == 8) {
-            return Direction.SOUTH;
-        } else if (rotation == 4 || rotation == 12) {
-            return Direction.NORTH;
-        } else if (rotation == 2 || rotation == 10) {
-            return Direction.WEST;
-        } else if (rotation == 6 || rotation == 14) {
-            return Direction.EAST;
+        switch (rotation) {
+            case 0, 8 -> {
+                return Direction.SOUTH;
+            }
+            case 4, 12 -> {
+                return Direction.NORTH;
+            }
+            case 2, 10 -> {
+                return Direction.WEST;
+            }
+            case 6, 14 -> {
+                return Direction.EAST;
+            }
+            default -> {
+            }
         }
         return null;
     }

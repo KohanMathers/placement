@@ -1,4 +1,4 @@
-package rocks.minestom.placement;
+package rocks.minestom.placement.utils;
 
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Point;
@@ -12,7 +12,7 @@ import net.minestom.server.instance.block.rule.BlockPlacementRule;
  * Licensed under Apache License 2.0.
  */
 
-final class VanillaPlacementUtils {
+public final class VanillaPlacementUtils {
     private static final BlockFace[] HORIZONTAL_FACES = {
             BlockFace.NORTH,
             BlockFace.EAST,
@@ -24,7 +24,7 @@ final class VanillaPlacementUtils {
 
     }
 
-    static void scheduleHorizontalNeighborRuleUpdates(Block.Getter blockGetter, Point centerPosition) {
+    public static void scheduleHorizontalNeighborRuleUpdates(Block.Getter blockGetter, Point centerPosition) {
         if (!(blockGetter instanceof Instance instance)) {
             return;
         }

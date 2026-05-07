@@ -1,225 +1,135 @@
 package rocks.minestom.placement;
 
+import java.util.ArrayList;
+
+import org.jetbrains.annotations.NotNull;
+
+import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Pos;
+import net.minestom.server.event.player.PlayerBlockBreakEvent;
+import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.instance.block.rule.BlockPlacementRule;
-import net.minestom.server.utils.Direction;
-import net.minestom.server.utils.MathUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import rocks.minestom.placement.handlers.ChestBlock;
+import rocks.minestom.placement.nbt.NBT;
+import rocks.minestom.placement.properties.enums.ChestType;
+import rocks.minestom.placement.properties.enums.FacingXZ;
+import rocks.minestom.placement.utils.PlacementUtils;
 
 /**
- * Code from <a href="https://github.com/vibenilla/placement">vibenilla placement</a>
- * Licensed under Apache License 2.0.
+ * Original code taken and modified from <a href="https://kloon.io">kloon</a>.
+ * Original code licensed under MIT.
  */
-
 
 public final class ChestPlacementRule extends BlockPlacementRule {
     public ChestPlacementRule(@NotNull Block block) {
         super(block);
     }
 
+    static {
+        MinecraftServer.getGlobalEventHandler().addListener(PlayerBlockBreakEvent.class, event -> {
+            Block block = event.getBlock();
+            Block blockType = block.defaultState();
+            if (!ChestBlock.BLOCKS.contains(blockType)) {
+                return;
+            }
+
+            FacingXZ facing = ChestBlock.FACING_XZ.get(block);
+            Point blockPos = event.getBlockPosition();
+            Instance instance = event.getInstance();
+
+            Point attachedPos = null;
+
+            Point leftPos = blockPos.relative(facing.rotateClockwise().toBlockFace());
+            Point rightPos = blockPos.relative(facing.rotateCounterClockwise().toBlockFace());
+            if (isAttached(instance, block, facing, leftPos)) {
+                attachedPos = leftPos;
+            } else if (isAttached(instance, block, facing, rightPos)) {
+                attachedPos = rightPos;
+            }
+
+            if (attachedPos != null) {
+                Block attachedBlock = instance.getBlock(attachedPos);
+                attachedBlock = ChestBlock.TYPE.get(ChestType.SINGLE).on(attachedBlock);
+                instance.setBlock(attachedPos, attachedBlock, false);
+            }
+        });
+    }
+
     @Override
     public Block blockPlace(@NotNull PlacementState placementState) {
-        var playerPosition = placementState.playerPosition();
-        var facing = this.getFacingDirection(playerPosition);
-        var chestType = "single";
+        Block block = PlacementUtils.waterlogged(placementState);
 
-        // If player is sneaking, don't auto-connect to adjacent chests
-        if (!placementState.isPlayerShifting()) {
-            var instance = placementState.instance();
-            var blockPosition = placementState.placePosition();
+        ChestType chestType = ChestType.SINGLE;
+        Point blockPos = placementState.placePosition();
+        FacingXZ facing = FacingXZ.fromLook(placementState.playerPosition()).opposite();
+        boolean sneaking = placementState.isPlayerShifting();
 
-            // Check for adjacent chests to form double chest
-            chestType = this.getChestType(instance, blockPosition, facing);
-        }
-
-        var handler = MinecraftServer.getBlockManager().getHandler(this.block.key().asString());
-        var placedBlock = this.block
-                .withProperty("facing", facing.name().toLowerCase())
-                .withProperty("type", chestType)
-                .withProperty("waterlogged", "false");
-
-        if (handler != null) {
-            placedBlock = placedBlock.withHandler(handler);
-        }
-
-        return placedBlock;
-    }
-
-    @Override
-    public Block blockUpdate(@NotNull UpdateState updateState) {
-        var currentBlock = updateState.currentBlock();
-        var blockPosition = updateState.blockPosition();
-        var instance = updateState.instance();
-        var fromFace = updateState.fromFace();
-
-        var facing = currentBlock.getProperty("facing");
-        var currentType = currentBlock.getProperty("type");
-
-        if (facing == null) {
-            return currentBlock;
-        }
-
-        var fromDirection = this.blockFaceToDirection(fromFace);
-        if (fromDirection == null) {
-            return currentBlock;
-        }
-
-        // Check if a neighbor chest in the fromFace direction wants to connect
-        if (this.isHorizontal(fromDirection) && "single".equals(currentType)) {
-            var neighborBlock = instance.getBlock(blockPosition.add(fromDirection.normalX(), fromDirection.normalY(), fromDirection.normalZ()));
-
-            if (Block.CHEST.compare(neighborBlock)) {
-                var neighborType = neighborBlock.getProperty("type");
-                var neighborFacing = neighborBlock.getProperty("facing");
-
-                // Only connect if neighbor is already part of a double chest (LEFT or RIGHT)
-                // and has the same facing, and points back at us
-                if (!"single".equals(neighborType) && facing.equals(neighborFacing)) {
-                    var neighborDirection = this.getConnectedDirection(neighborFacing, neighborType);
-                    if (neighborDirection == this.getOppositeDirection(fromDirection)) {
-                        var newType = "left".equals(neighborType) ? "right" : "left";
-                        var updatedBlock = currentBlock.withProperty("type", newType);
-
-                        var handler = currentBlock.handler();
-                        if (handler != null) {
-                            updatedBlock = updatedBlock.withHandler(handler);
-                        }
-
-                        return updatedBlock;
-                    }
-                }
+        Point attachedPos = null;
+        if (!sneaking) {
+            Point leftPos = blockPos.relative(facing.rotateClockwise().toBlockFace());
+            Point rightPos = blockPos.relative(facing.rotateCounterClockwise().toBlockFace());
+            if (canAttach(placementState.instance(), block, facing, leftPos)) {
+                attachedPos = leftPos;
+                chestType = ChestType.LEFT;
+            } else if (canAttach(placementState.instance(), block, facing, rightPos)) {
+                attachedPos = rightPos;
+                chestType = ChestType.RIGHT;
             }
         }
 
-        // Check if we should revert to single (neighbor was removed)
-        if (!"single".equals(currentType)) {
-            var connectedDir = this.getConnectedDirection(facing, currentType);
-            if (connectedDir == fromDirection) {
-                var updatedBlock = currentBlock.withProperty("type", "single");
+        block = ChestBlock.FACING_XZ.get(facing).on(block);
+        block = ChestBlock.TYPE.get(chestType).on(block);
 
-                var handler = currentBlock.handler();
-                if (handler != null) {
-                    updatedBlock = updatedBlock.withHandler(handler);
-                }
-
-                return updatedBlock;
-            }
+        if (attachedPos != null && placementState.instance() instanceof Instance instance) {
+            Block attachedBlock = instance.getBlock(attachedPos);
+            attachedBlock = ChestBlock.TYPE.get(chestType.opposite()).on(attachedBlock);
+            instance.setBlock(attachedPos, attachedBlock, false);
         }
 
-        return currentBlock;
+        CompoundBinaryTag nbt = NBT.compound(c -> {
+            c.putCompoundList("Items", new ArrayList<>());
+        });
+
+        return block.withNbt(nbt);
     }
 
-    @Nullable
-    private Direction blockFaceToDirection(net.minestom.server.instance.block.BlockFace blockFace) {
-        return switch (blockFace) {
-            case NORTH -> Direction.NORTH;
-            case SOUTH -> Direction.SOUTH;
-            case EAST -> Direction.EAST;
-            case WEST -> Direction.WEST;
-            case TOP -> Direction.UP;
-            case BOTTOM -> Direction.DOWN;
-        };
-    }
+    private static boolean canAttach(Block.Getter instance, Block chestBlock, FacingXZ facing, Point blockPos) {
+        Block checking = instance.getBlock(blockPos);
 
-    private boolean isHorizontal(Direction direction) {
-        return direction == Direction.NORTH || direction == Direction.SOUTH
-                || direction == Direction.EAST || direction == Direction.WEST;
-    }
-
-    private Direction getOppositeDirection(Direction direction) {
-        return switch (direction) {
-            case NORTH -> Direction.SOUTH;
-            case SOUTH -> Direction.NORTH;
-            case EAST -> Direction.WEST;
-            case WEST -> Direction.EAST;
-            case UP -> Direction.DOWN;
-            case DOWN -> Direction.UP;
-        };
-    }
-
-    @Nullable
-    private Direction getConnectedDirection(String facingStr, String chestType) {
-        var facing = Direction.valueOf(facingStr.toUpperCase());
-
-        if ("left".equals(chestType)) {
-            return this.getClockwiseDirection(facing);
-        } else if ("right".equals(chestType)) {
-            return this.getCounterClockwiseDirection(facing);
+        if (!isSameChestId(chestBlock, checking)) {
+            return false;
         }
 
-        return null;
+        ChestType type = ChestBlock.TYPE.get(checking);
+        if (type != ChestType.SINGLE) {
+            return false;
+        }
+
+        return facing == ChestBlock.FACING_XZ.get(checking);
     }
 
-    private String getChestType(Block.Getter instance, Point blockPosition, Direction facing) {
-        var clockwiseDirection = this.getClockwiseDirection(facing);
-        var candidateFacing = this.candidatePartnerFacing(instance, blockPosition, clockwiseDirection);
+    private static boolean isAttached(Instance instance, Block chestBlock, FacingXZ facing, Point blockPos) {
+        Block checking = instance.getBlock(blockPos);
 
-        if (candidateFacing != null && candidateFacing == facing) {
-            return "left";
+        if (!isSameChestId(chestBlock, checking)) {
+            return false;
         }
 
-        var counterClockwiseDirection = this.getCounterClockwiseDirection(facing);
-        candidateFacing = this.candidatePartnerFacing(instance, blockPosition, counterClockwiseDirection);
-
-        if (candidateFacing != null && candidateFacing == facing) {
-            return "right";
+        FacingXZ checkingFace = ChestBlock.FACING_XZ.get(checking);
+        if (checkingFace != facing) {
+            return false;
         }
 
-        return "single";
+        ChestType chestType = ChestBlock.TYPE.get(chestBlock);
+        ChestType checkingType = ChestBlock.TYPE.get(checking);
+        return checkingType != ChestType.SINGLE && chestType == checkingType.opposite();
     }
 
-    @Nullable
-    private Direction candidatePartnerFacing(Block.Getter instance, Point blockPosition, Direction direction) {
-        var adjacentPosition = blockPosition.add(direction.normalX(), direction.normalY(), direction.normalZ());
-        var adjacentBlock = instance.getBlock(adjacentPosition);
-
-        // Check if the adjacent block is a chest using Block.compare
-        if (!Block.CHEST.compare(adjacentBlock)) {
-            return null;
-        }
-
-        var adjacentType = adjacentBlock.getProperty("type");
-        if (!"single".equals(adjacentType)) {
-            return null;
-        }
-
-        var adjacentFacing = adjacentBlock.getProperty("facing");
-        if (adjacentFacing == null) {
-            return null;
-        }
-
-        return Direction.valueOf(adjacentFacing.toUpperCase());
-    }
-
-    private Direction getFacingDirection(@Nullable Pos position) {
-        if (position == null) {
-            return Direction.NORTH;
-        }
-
-        return MathUtils.getHorizontalDirection(position.yaw()).opposite();
-    }
-
-    private Direction getClockwiseDirection(Direction direction) {
-        return switch (direction) {
-            case NORTH -> Direction.EAST;
-            case EAST -> Direction.SOUTH;
-            case SOUTH -> Direction.WEST;
-            case WEST -> Direction.NORTH;
-            default -> direction;
-        };
-    }
-
-    private Direction getCounterClockwiseDirection(Direction direction) {
-        return switch (direction) {
-            case NORTH -> Direction.WEST;
-            case WEST -> Direction.SOUTH;
-            case SOUTH -> Direction.EAST;
-            case EAST -> Direction.NORTH;
-            default -> direction;
-        };
+    private static boolean isSameChestId(Block a, Block b) {
+        Block aType = a.defaultState();
+        Block bType = b.defaultState();
+        return aType == bType;
     }
 }

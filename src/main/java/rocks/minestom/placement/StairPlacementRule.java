@@ -8,6 +8,7 @@ import net.minestom.server.instance.block.Block;
 import net.minestom.server.instance.block.BlockFace;
 import net.minestom.server.instance.block.rule.BlockPlacementRule;
 import org.jetbrains.annotations.NotNull;
+import rocks.minestom.placement.utils.Utility;
 
 import java.util.Locale;
 import java.util.Map;

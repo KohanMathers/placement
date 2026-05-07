@@ -43,3 +43,39 @@ dependencies {
 
 ## Usage
 Check [this snippet](https://gist.github.com/mudkipdev/90719b090341e1aebaa6fef8ecf661c8) for a complete list of all placement rules and how to register them.
+
+## Credits
+The following placement rules were taken and modified from their respective sources:
+
+<details>
+<summary>kloon.io</summary>
+<br>
+
+- Amethyst Cluster
+- Anvil
+- Bell
+- Campfire
+- Candle
+- Chest
+- Chorus Plant
+- Cocoa
+- Coral Fan
+- Crafter
+- Decorated Pot
+- Dripstone
+- Hanging Sign
+- Hopper
+- Huge Mushroom
+- Lantern
+- Looks Facing XZ
+- Multiface
+- Pane
+- Pillar
+- Pink Petal
+- Redstone Wire
+- Sign
+- Skull
+- Snow Layer
+- String
+- Torch
+- Vine

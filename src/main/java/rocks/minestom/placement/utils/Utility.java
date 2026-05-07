@@ -1,4 +1,4 @@
-package rocks.minestom.placement;
+package rocks.minestom.placement.utils;
 
 import net.kyori.adventure.key.Key;
 import net.minestom.server.MinecraftServer;

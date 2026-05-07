@@ -50,6 +50,9 @@ repositories {
 dependencies {
     compileOnly("net.minestom:minestom:2026.01.08-1.21.11")
 
+    implementation("com.google.guava:guava:33.2.1-jre")
+    implementation("org.apache.commons:commons-text:1.12.0")
+
     // Unit testing
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.11.4")

@@ -6,7 +6,7 @@ import net.minestom.server.instance.block.BlockFace;
 import net.minestom.server.instance.block.rule.BlockPlacementRule;
 import net.minestom.server.utils.Direction;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import rocks.minestom.placement.utils.Utility;
 
 /**
  * Code from <a href="https://github.com/vibenilla/placement">vibenilla placement</a>
@@ -21,7 +21,7 @@ public final class WallHangingSignPlacementRule extends BlockPlacementRule {
     }
 
     @Override
-    public @Nullable Block blockPlace(@NotNull PlacementState placementState) {
+    public Block blockPlace(@NotNull PlacementState placementState) {
         var blockFace = placementState.blockFace();
         if (blockFace == null) {
             return null;
