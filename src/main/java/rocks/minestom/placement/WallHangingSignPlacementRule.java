@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import rocks.minestom.placement.utils.Utility;
 
 /**
- * Code from <a href="https://github.com/vibenilla/placement">vibenilla placement</a>
+ * Code from <a href="https://github.com/vibenilla/placement">vibenilla placement</a>.
  * Licensed under Apache License 2.0.
  */
 

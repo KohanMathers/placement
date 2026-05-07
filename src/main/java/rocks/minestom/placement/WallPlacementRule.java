@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Code from <a href="https://github.com/vibenilla/placement">vibenilla placement</a>
+ * Code from <a href="https://github.com/vibenilla/placement">vibenilla placement</a>.
  * Licensed under Apache License 2.0.
  */
 

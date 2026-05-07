@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import rocks.minestom.placement.utils.Utility;
 
 /**
- * Code from <a href="https://github.com/vibenilla/placement">vibenilla placement</a>
+ * Code from <a href="https://github.com/vibenilla/placement">vibenilla placement</a>.
  * Licensed under Apache License 2.0.
  * 
  * @see <a href="https://mcsrc.dev/#1/1.21.11_unobfuscated/net/minecraft/world/level/block/DoorBlock">Minecraft source code</a>

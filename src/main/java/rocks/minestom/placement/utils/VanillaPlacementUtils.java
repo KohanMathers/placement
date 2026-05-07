@@ -8,7 +8,7 @@ import net.minestom.server.instance.block.BlockFace;
 import net.minestom.server.instance.block.rule.BlockPlacementRule;
 
 /**
- * Code from <a href="https://github.com/vibenilla/placement">vibenilla placement</a>
+ * Code from <a href="https://github.com/vibenilla/placement">vibenilla placement</a>.
  * Licensed under Apache License 2.0.
  */
 
